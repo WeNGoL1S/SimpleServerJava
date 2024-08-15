@@ -36,7 +36,7 @@ this(eventListener, new Socket(ipAddr,port));
                 }catch (IOException e){
                     eventListener.onException(TCPConnection.this, e);
                 }finally {
-eventListener.onDisconnect(TCPConnection.this);
+                    eventListener.onDisconnect(TCPConnection.this);
                 }
             }
         });
