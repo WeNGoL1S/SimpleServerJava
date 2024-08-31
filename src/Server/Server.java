@@ -2,22 +2,25 @@ package Server;
 
 import network.*;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
 import javax.swing.*;
 
 public class Server implements TCPConnectionListener {
     static String adminpass;
     static String adminusername;
+    static File seiitingsfile = new File("settings.ini");
 
     public static void main(String [] args){
 
         System.out.print("Server starting...\n");
+
+        if (!seiitingsfile.exists()) {
+            createSettings();
+        }
         try {
             readPass();
         } catch (IOException e) {
@@ -31,7 +34,7 @@ public class Server implements TCPConnectionListener {
 
     private Server(){
         try {
-            ServerSocket serverSocket = new ServerSocket(8189);
+            ServerSocket serverSocket = new ServerSocket(9021);
             while (true){
 
                 try {
@@ -57,7 +60,7 @@ public class Server implements TCPConnectionListener {
     public synchronized void onReceiveString(TCPConnection tcpConnection, String value) {
         if(value.equals(adminusername+"> close_server "+ adminpass))
         {
-            System.out.print("Closing server...");
+            System.out.print("Closing server...\n");
             System.exit(2);
         }
         sendToAllConnections(value);
@@ -65,20 +68,61 @@ public class Server implements TCPConnectionListener {
     }
 
     private static void readPass() throws IOException {
-        File adminpassfile = new File("adminpass.txt");
-        File adminusernamefile = new File("adminusername.txt");
-        FileReader read = new FileReader(adminpassfile);
-        FileReader read2 = new FileReader(adminusernamefile);
+        FileReader read = new FileReader(seiitingsfile);
         BufferedReader buffer = new BufferedReader(read);
-        BufferedReader buffer2 = new BufferedReader(read2);
+        buffer.readLine();
 
-        adminpass = buffer.readLine();
-        adminusername = buffer2.readLine();
+        String[] lines;
 
-        read.close();
-        read2.close();
+        ArrayList<String> list = new ArrayList<>();
+
+        boolean isEnd = false;
+
+        while (!isEnd) {
+            String readlines = buffer.readLine();
+            list.add(readlines);
+
+            isEnd = !buffer.ready();
+        }
+
+        lines = new String[list.size()];
+
+        for (int j = 0; j < list.size(); j++) {
+            lines[j] = list.get(j);
+        }
+
+        for (int i = 0; i < lines.length; i++) {
+            String[] args = lines[i].split("=");
+
+            System.out.println(Arrays.toString(args));
+
+            if (args[0].equals("AdminNickname")) {
+                adminusername = args[1];
+            }else if (args[0].equals("AdminPassword")) {
+                adminpass = args[1];
+            }
+        }
+
         buffer.close();
-        buffer2.close();
+        read.close();
+
+    }
+
+    private static void createSettings() {
+
+        try {
+            seiitingsfile.createNewFile();
+            FileWriter write = new FileWriter(seiitingsfile, false);
+            write.write("[Settings]\n" +
+                    "AdminNickname=user\n" +
+                    "AdminPassword=0");
+            write.close();
+
+            System.out.print("File 'settings.ini' is created!\n");
+
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
 
     }
 
